@@ -7,7 +7,16 @@ resource "google_dataplex_entry_group" "engine_group" {
   display_name     = "Metadata Engine Group"
 }
 
-# 2. Create the Entries (Aspects)
+# 2. Create the custom Entry Type ("table" blueprint)
+resource "google_dataplex_entry_type" "table_type" {
+  project       = var.hub_project
+  location      = var.location
+  entry_type_id = "table"
+  description   = "Custom Entry Type for BigQuery Tables"
+  display_name  = "Table"
+}
+
+# 3. Create the Entries (Aspects)
 resource "google_dataplex_entry" "metadata_aspects" {
   for_each = local.processed_rules
 
@@ -16,15 +25,13 @@ resource "google_dataplex_entry" "metadata_aspects" {
   entry_group_id = google_dataplex_entry_group.engine_group.entry_group_id
   entry_id       = "metadata_${each.key}"
   
-  # Requirement: Entry Type must use the Project Number
-  entry_type     = "projects/${var.hub_project_number}/locations/${var.location}/entryTypes/table"
+  # FIX: We now point to the blueprint we just created above!
+  entry_type     = google_dataplex_entry_type.table_type.id
 
   # The "Aspects" block
   aspects {
-    # Requirement: aspect_key MUST be in the format: project_number.location.aspect_type_id
     aspect_key = "${var.hub_project_number}.${var.location}.business-rule-v1"
 
-    # Requirement: The actual data must be inside a nested "aspect" block
     aspect {
       data = jsonencode({
         rule_id     = each.key
