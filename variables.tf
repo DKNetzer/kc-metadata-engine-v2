@@ -10,10 +10,9 @@ variable "spoke_project" {
   default     = "jutomate-playground"
 }
 
-variable "hub_project_number" {
+variable "hub_project" {
   type        = string
-  description = "The Project Number of the Hub project (Required for Aspect Keys)"
-  default     = "111111111111" # We will inject the real number later
+  description = "The Project ID of the Hub project"
 }
 
 variable "location" {
