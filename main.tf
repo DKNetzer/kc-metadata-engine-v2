@@ -1,18 +1,30 @@
+# 1. Create a custom Entry Group
+resource "google_dataplex_entry_group" "engine_group" {
+  project          = var.hub_project
+  location         = var.location
+  entry_group_id   = "metadata-engine-group"
+  description      = "Custom entry group managed by the KC Metadata Engine"
+  display_name     = "Metadata Engine Group"
+}
+
+# 2. Create the Entries (Aspects)
 resource "google_dataplex_entry" "metadata_aspects" {
   for_each = local.processed_rules
 
-  project        = var.spoke_project
+  project        = var.hub_project
   location       = var.location
-  entry_group_id = "@bigquery"
+  entry_group_id = google_dataplex_entry_group.engine_group.entry_group_id
+  entry_id       = "metadata_${each.key}"
   
-  entry_id   = "bigquery.googleapis.com/projects/${var.spoke_project}/datasets/tpc_h_prod_iac_${var.environment}/tables/${each.value.target_table}"
-  
-  # 1. FIXED: We are now using the hub_project_number to pass the strict Terraform validation!
-  entry_type = "projects/${var.hub_project_number}/locations/${var.location}/entryTypes/table"
+  # Requirement: Entry Type must use the Project Number
+  entry_type     = "projects/${var.hub_project_number}/locations/${var.location}/entryTypes/table"
 
-  # 2. ASPECT ATTACHMENT
+  # The "Aspects" block
   aspects {
-    aspect_key = "${var.hub_project_number}.${var.location}.business-rule-v1-${var.environment}"
+    # Requirement: aspect_key MUST be in the format: project_number.location.aspect_type_id
+    aspect_key = "${var.hub_project_number}.${var.location}.business-rule-v1"
+
+    # Requirement: The actual data must be inside a nested "aspect" block
     aspect {
       data = jsonencode({
         rule_id     = each.key
@@ -22,10 +34,5 @@ resource "google_dataplex_entry" "metadata_aspects" {
         status      = each.value.status
       })
     }
-  }
-
-  # 3. Tell Terraform NOT to touch the system-managed parts of the auto-discovered BigQuery table
-  lifecycle {
-    ignore_changes = [entry_type, entry_source, parent_entry]
   }
 }
