@@ -3,9 +3,8 @@ name: "Terraform Plan (Dev)"
 on:
   pull_request:
     branches:
-      - main  # <-- Change this to main
+      - main
 
-# This permission block is REQUIRED for secure WIF authentication
 permissions:
   contents: 'read'
   id-token: 'write' 
@@ -16,32 +15,38 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
-      # 1. Check out this Engine repository
+      # 1. Check out Engine into a side-by-side subfolder
       - name: Checkout Metadata Engine
         uses: actions/checkout@v4
+        with:
+          path: kc-metadata-engine-v2
         
-      # 2. Check out the Governance YAML repository one folder level up!
+      # 2. Check out Governance into a side-by-side subfolder
       - name: Checkout App Governance
         uses: actions/checkout@v4
         with:
           repository: DKNetzer/kc-app-governance-v2
-          path: ../kc-app-governance-v2
-# 3. Authenticate securely to Google Cloud without JSON keys
+          path: kc-app-governance-v2
+
+      # 3. Authenticate securely to Google Cloud without JSON keys
       - name: Authenticate to GCP
         uses: google-github-actions/auth@v2
         with:
           workload_identity_provider: 'projects/351374086012/locations/global/workloadIdentityPools/github-actions-pool/providers/github-provider'
           service_account: 'tf-github-sa@jutomate-playground-hub.iam.gserviceaccount.com'
-  
+
       # 4. Install Terraform
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: "1.5.0"
 
-      # 5. Run the exact commands we validated locally
+      # 5. Run Terraform Init (Now executing specifically inside the engine folder)
       - name: Terraform Init
+        working-directory: ./kc-metadata-engine-v2
         run: terraform init -upgrade -backend-config=environments/dev/backend.tfvars
         
+      # 6. Run Terraform Plan
       - name: Terraform Plan
+        working-directory: ./kc-metadata-engine-v2
         run: terraform plan -var-file=environments/dev/terraform.tfvars
