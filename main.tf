@@ -29,10 +29,3 @@ resource "google_dataplex_entry" "metadata_aspects" {
     ignore_changes = [entry_type, entry_source, parent_entry]
   }
 }
-
-# 4. Use an import block to pull the existing auto-discovered BigQuery entries into our state!
-import {
-  for_each = local.processed_rules
-  to       = google_dataplex_entry.metadata_aspects[each.key]
-  id       = "projects/${var.spoke_project}/locations/${var.location}/entryGroups/@bigquery/entries/bigquery.googleapis.com/projects/${var.spoke_project}/datasets/tpc_h_prod_iac_${var.environment}/tables/${each.value.target_table}"
-}
