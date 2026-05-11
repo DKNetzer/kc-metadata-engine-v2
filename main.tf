@@ -26,7 +26,7 @@ resource "google_dataplex_entry" "metadata_aspects" {
   entry_id       = "metadata_${each.key}"
   
   # FIX: We now point to the blueprint we just created above!
-  entry_type     = google_dataplex_entry_type.table_type.id
+entry_type     = "projects/${var.hub_project_number}/locations/${var.location}/entryTypes/${google_dataplex_entry_type.table_type.entry_type_id}"
 
   # The "Aspects" block
   aspects {
