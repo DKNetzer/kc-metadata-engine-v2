@@ -1,17 +1,18 @@
-name: "Terraform Plan (Dev)"
+name: "Terraform Apply (Prod)"
 
+# This only runs when code is actually merged into the main branch
 on:
-  pull_request:
+  push:
     branches:
       - main
 
 permissions:
   contents: 'read'
-  id-token: 'write' 
+  id-token: 'write'
 
 jobs:
-  plan:
-    name: "Terraform Plan"
+  apply:
+    name: "Terraform Apply"
     runs-on: ubuntu-latest
     
     steps:
@@ -28,7 +29,7 @@ jobs:
           repository: DKNetzer/kc-app-governance-v2
           path: kc-app-governance-v2
 
-      # 3. Authenticate securely to Google Cloud without JSON keys
+      # 3. Authenticate securely to Google Cloud
       - name: Authenticate to GCP
         uses: google-github-actions/auth@v2
         with:
@@ -41,12 +42,12 @@ jobs:
         with:
           terraform_version: "1.5.0"
 
-      # 5. Run Terraform Init (Now executing specifically inside the engine folder)
+      # 5. Run Terraform Init
       - name: Terraform Init
         working-directory: ./kc-metadata-engine-v2
         run: terraform init -upgrade -backend-config=environments/dev/backend.tfvars
         
-      # 6. Run Terraform Plan
-      - name: Terraform Plan
+      # 6. Run Terraform Apply (The -auto-approve flag is critical for automation!)
+      - name: Terraform Apply
         working-directory: ./kc-metadata-engine-v2
-        run: terraform plan -var-file=environments/dev/terraform.tfvars
+        run: terraform apply -var-file=environments/dev/terraform.tfvars -auto-approve
