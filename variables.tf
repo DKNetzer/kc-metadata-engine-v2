@@ -15,6 +15,11 @@ variable "hub_project" {
   description = "The Project ID of the Hub project"
 }
 
+variable "hub_project_number" {
+  type        = string
+  description = "The numeric ID of the Hub project"
+}
+
 variable "location" {
   type        = string
   default     = "us-central1"

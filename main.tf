@@ -1,4 +1,4 @@
-# 1. Create a custom Entry Group for our Metadata Engine
+# 1. Create a custom Entry Group
 resource "google_dataplex_entry_group" "engine_group" {
   project          = var.hub_project
   location         = var.location
@@ -7,33 +7,28 @@ resource "google_dataplex_entry_group" "engine_group" {
   display_name     = "Metadata Engine Group"
 }
 
-# 2. Create the Entries (Aspects) inside our custom group
+# 2. Create the Entries (Aspects)
 resource "google_dataplex_entry" "metadata_aspects" {
   for_each = local.processed_rules
 
   project        = var.hub_project
   location       = var.location
-  # We now point to our custom group instead of @bigquery
   entry_group_id = google_dataplex_entry_group.engine_group.entry_group_id
-  
-  # We name the entry after the rule so it's easy to find
   entry_id       = "metadata_${each.key}"
   
-  # This tells Dataplex which BigQuery table this metadata belongs to
-  entry_type     = "projects/${var.spoke_project}/locations/${var.location}/entryTypes/table"
+  # FIX: Uses project NUMBER for the type path
+  entry_type     = "projects/${var.hub_project_number}/locations/${var.location}/entryTypes/table"
 
+  # FIX: Flattened the aspects block (no nested 'aspect' block)
   aspects {
-    aspect_key = "business-rule-v1"
-    aspect {
-      # Use your specific aspect type ID here
-      aspect_type = "projects/${var.hub_project}/locations/${var.location}/aspectTypes/business-rule-v1"
-      data = jsonencode({
-        rule_id     = each.key
-        name        = each.value.name
-        description = each.value.description
-        sql_formula = each.value.sql_formula
-        status      = each.value.status
-      })
-    }
+    # FIX: Aspect key must start with the project number
+    aspect_type = "projects/${var.hub_project}/locations/${var.location}/aspectTypes/business-rule-v1"
+    data = jsonencode({
+      rule_id     = each.key
+      name        = each.value.name
+      description = each.value.description
+      sql_formula = each.value.sql_formula
+      status      = each.value.status
+    })
   }
 }
